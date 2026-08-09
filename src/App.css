@@ -162,56 +162,144 @@
   .section-content {
     text-align: center;
   }
+}
 
-  > .section-content > p {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
+.about-content {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+  margin-top: 2rem;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
 
-    @media (max-width: 768px) {
-      margin-bottom: 1.5rem;
-    }
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
   }
 }
 
-.about-card {
-  background: var(--bg-tertiary);
-  padding: 2rem;
-  border: 1px solid var(--border-primary);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-
-  &:hover {
-    border-color: var(--accent-highlight);
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
-    transform: translateY(-4px);
-  }
+.about-bio,
+.about-practice {
+  text-align: left;
 
   h3 {
     color: var(--accent-highlight);
-    margin-bottom: 0.5rem;
+    margin-bottom: 1.25rem;
+    text-align: center;
   }
 
   p {
-    color: var(--text-tertiary);
+    color: var(--text-secondary);
+    line-height: 1.9;
     font-size: 0.95rem;
+
+    @media (max-width: 768px) {
+      font-size: 0.9rem;
+    }
   }
 }
 
 /* Contact Section */
 .section-contact {
   background: var(--bg-primary);
+  min-height: auto;
+  padding: 6rem 0;
+
+  @media (max-width: 768px) {
+    padding: 4rem 0;
+  }
 
   .section-content {
     text-align: center;
   }
+}
 
-  > .section-content > p {
-    font-size: 1.1rem;
-    margin-bottom: 2rem;
+.contact-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  margin-top: 3rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
 
-    @media (max-width: 768px) {
-      margin-bottom: 1.5rem;
-    }
+  @media (min-width: 768px) {
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 4rem;
+  }
+}
+
+.contact-email {
+  p {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.email-link {
+  display: inline-block;
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--accent-highlight);
+    color: var(--accent-highlight);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+    text-decoration: none;
+  }
+}
+
+.contact-social {
+  p {
+    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}
+
+.social-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+
+  @media (max-width: 768px) {
+    gap: 0.75rem;
+  }
+}
+
+.social-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  color: var(--text-secondary);
+  transition: all 0.3s ease;
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    border-color: var(--accent-highlight);
+    color: var(--accent-highlight);
+    box-shadow: 0 0 15px rgba(0, 255, 136, 0.1);
+    transform: translateY(-2px);
   }
 }
 
@@ -229,12 +317,26 @@
     font-size: 0.85rem;
   }
 
-  .about-grid {
+  .about-content {
+    gap: 2rem;
+  }
+
+  .contact-footer {
     gap: 1.5rem;
   }
 
-  .about-card {
-    padding: 1.5rem 1rem;
+  .social-links {
+    gap: 0.5rem;
+  }
+
+  .social-icon {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
   }
 }
 
@@ -243,7 +345,11 @@
     padding: 3rem 1rem;
   }
 
-  .about-grid {
-    gap: 2rem;
+  .about-content {
+    gap: 2.5rem;
+  }
+
+  .section-contact {
+    padding: 4rem 1rem;
   }
 }
