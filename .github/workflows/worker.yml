@@ -74,6 +74,15 @@ jobs:
             --max-turns ${{ vars.WORKER_TURNS }} \
             --dangerously-skip-permissions
 
+      - name: Debug workspace state
+        run: |
+          echo "--- pwd ---"
+          pwd
+          echo "--- full tree ---"
+          find . -maxdepth 3 -not -path './node_modules*' -not -path './.git*'
+          echo "--- git status ---"
+          git status
+
       - name: Commit and push
         run: |
           git add -A
