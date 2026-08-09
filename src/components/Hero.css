@@ -1,0 +1,139 @@
+.hero-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  margin-top: -1px;
+  margin-bottom: -1px;
+  contain: layout style paint;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding: 40px 20px;
+  max-width: 90%;
+  animation: fadeIn 0.8s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.logo-mark {
+  width: 100px;
+  height: 100px;
+  margin-bottom: 16px;
+  animation: floatIn 1s ease-out 0.2s both;
+
+  svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.1));
+  }
+}
+
+@keyframes floatIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.artist-name {
+  font-size: 64px;
+  font-weight: 500;
+  letter-spacing: -1.92px;
+  margin: 0;
+  color: var(--text-h);
+  line-height: 1.1;
+  animation: slideUp 0.8s ease-out 0.3s both;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tagline {
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text);
+  max-width: 500px;
+  margin: 0;
+  line-height: 1.5;
+  animation: slideUp 0.8s ease-out 0.4s both;
+}
+
+@media (max-width: 768px) {
+  .hero-content {
+    gap: 20px;
+    padding: 32px 20px;
+  }
+
+  .logo-mark {
+    width: 80px;
+    height: 80px;
+  }
+
+  .artist-name {
+    font-size: 48px;
+    letter-spacing: -1.44px;
+  }
+
+  .tagline {
+    font-size: 16px;
+    letter-spacing: 0.96px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content {
+    gap: 16px;
+    padding: 24px 16px;
+  }
+
+  .logo-mark {
+    width: 64px;
+    height: 64px;
+  }
+
+  .artist-name {
+    font-size: 36px;
+    letter-spacing: -1.08px;
+  }
+
+  .tagline {
+    font-size: 14px;
+    letter-spacing: 0.84px;
+  }
+}
