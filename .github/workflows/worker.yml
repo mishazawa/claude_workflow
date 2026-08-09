@@ -85,11 +85,11 @@ jobs:
 
       - name: Commit and push
         run: |
-          git add -A
-          # Exits with 0 if no changes exist, which correctly triggers the failure exit
-          git diff --cached --quiet && { echo "No changes produced"; exit 1; }
-          git commit -m "Implement #${{ inputs.issue_number }}"
-          # Use GitHub's env context to ensure safe interpolation
+          # Claude may have already committed during its run — only commit if there's uncommitted work
+          if ! git diff --cached --quiet || ! git diff --quiet; then
+            git add -A
+            git commit -m "Implement #${{ inputs.issue_number }}"
+          fi
           git push -u origin "${{ env.branch }}"
 
   test:
