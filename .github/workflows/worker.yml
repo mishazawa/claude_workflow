@@ -25,6 +25,13 @@ jobs:
           ref: ${{ inputs.integration_branch }}
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Fetch subtask issue
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -22,6 +22,13 @@ jobs:
           git config --global user.name "Claude"
           git config --global user.email "claude@anthropic.com"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ".nvmrc"
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Create integration branch
         id: branch
         run: |
