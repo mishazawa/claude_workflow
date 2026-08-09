@@ -70,7 +70,7 @@ jobs:
             --model ${{ vars.WORKER_MODEL }} \
             --effort ${{ vars.WORKER_EFFORT }} \
             --max-turns ${{ vars.WORKER_TURNS }} \
-            --permission-mode auto
+            --dangerously-skip-permissions
       - name: Commit and push
         run: |
           git add -A
