@@ -68,8 +68,7 @@ jobs:
             --permission-mode auto \
             > "$RUN_DIR/plan_raw.json"
 
-          # strip markdown code fences if present
-          sed -e '/^```/d'$RUN_DIR/plan_raw.json > $RUN_DIR/plan_stripped.json
+          sed -e '/^```/d' "$RUN_DIR/plan_raw.json" > $RUN_DIR/plan_stripped.json
 
           jq -c '.' $RUN_DIR/plan_stripped.json > $RUN_DIR/plan.json || {
             echo "Model output wasn't valid JSON:"; cat $RUN_DIR/plan_raw.json; exit 1;
