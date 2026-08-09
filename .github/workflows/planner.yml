@@ -92,9 +92,8 @@ jobs:
               --body "$body"$'\n\nPart of #'"$PARENT" \
               --label "subtask")
             num=$(basename "$url")
-            numbers=$(echo "$numbers" | jq --arg n "$num" '. + [$n | tonumber]')
+            numbers=$(echo "$numbers" | jq -c --arg n "$num" '. + [$n | tonumber]')
           done < <(jq -c '.subtasks[]' "$RUN_DIR/plan.json")
-
           echo "subtasks=$numbers" >> "$GITHUB_OUTPUT"
 
   dispatch-workers:
