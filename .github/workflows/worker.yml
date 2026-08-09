@@ -117,9 +117,8 @@ jobs:
             --base ${{ inputs.integration_branch }} \
             --head ${{ needs.implement.outputs.branch }} \
             --title "$TITLE" \
-            --body "Implements #${{ inputs.issue_number }}" \
+            --body "Closes #${{ inputs.issue_number }}" \
             --label "subtask-pr"
-          gh pr merge --auto --squash "${{ needs.implement.outputs.branch }}"
 
   comment-on-failure:
     needs: [implement, test]
