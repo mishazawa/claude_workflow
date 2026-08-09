@@ -1,0 +1,12 @@
+name: PR checks
+
+on:
+  pull_request:
+    branches:
+      - "integration/**"
+
+jobs:
+  test:
+    uses: ./.github/workflows/run-tests.yml
+    with:
+      ref: ${{ github.event.pull_request.head.sha }}
