@@ -33,8 +33,12 @@ jobs:
         id: branch
         run: |
           NAME="integration/${{ github.event.issue.number }}"
-          git checkout -b "$NAME"
-          git push -u origin "$NAME"
+          if git ls-remote --exit-code --heads origin "$NAME" > /dev/null 2>&1; then
+            echo "Branch $NAME already exists remotely, reusing it"
+          else
+            git checkout -b "$NAME"
+            git push -u origin "$NAME"
+          fi
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
 
       - name: Run planning prompt
