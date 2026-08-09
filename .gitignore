@@ -1,5 +1,6 @@
 .test_data/ 
 .serena/
+.claude/
 dist/
 
 # Logs
