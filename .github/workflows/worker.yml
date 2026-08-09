@@ -36,8 +36,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh issue view ${{ inputs.issue_number }} --json title -q .title > title.txt
-          gh issue view ${{ inputs.issue_number }} --json body -q .body > body.txt
+          mkdir -p .runtime
+          gh issue view ${{ inputs.issue_number }} --json title -q .title > .runtime/title.txt
+          gh issue view ${{ inputs.issue_number }} --json body -q .body > .runtime/body.txt
 
       - name: Configure git identity
         run: |
@@ -54,43 +55,52 @@ jobs:
 
       - name: Build prompt
         run: |
+          mkdir -p .runtime
           python3 -c "
-          title = open('title.txt').read().strip()
-          body = open('body.txt').read().strip()
+          title = open('.runtime/title.txt').read().strip()
+          body = open('.runtime/body.txt').read().strip()
           tpl = open('.github/prompts/implement.md').read()
           tpl = tpl.replace('{{ISSUE_TITLE}}', title).replace('{{ISSUE_BODY}}', body)
-          open('prompt.md', 'w').write(tpl)
+          open('.runtime/prompt.md', 'w').write(tpl)
           "
 
       - name: Run implementation
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          claude -p "$(cat prompt.md)" \
+          claude -p "$(cat .runtime/prompt.md)" \
             --model ${{ vars.WORKER_MODEL }} \
             --effort ${{ vars.WORKER_EFFORT }} \
             --max-turns ${{ vars.WORKER_TURNS }} \
             --dangerously-skip-permissions
+
       - name: Commit and push
         run: |
           git add -A
+          # Exits with 0 if no changes exist, which correctly triggers the failure exit
           git diff --cached --quiet && { echo "No changes produced"; exit 1; }
           git commit -m "Implement #${{ inputs.issue_number }}"
-          git push -u origin "$branch"
+          # Use GitHub's env context to ensure safe interpolation
+          git push -u origin "${{ env.branch }}"
+
   test:
     needs: implement
     uses: ./.github/workflows/run-tests.yml
     with:
       ref: ${{ needs.implement.outputs.branch }}
+
   open-pr:
     needs: [implement, test]
-    if: needs.test.outputs.passed == 'true'
+    # Check native job result rather than custom output
+    if: needs.test.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       issues: read
     steps:
+      - uses: actions/checkout@v4
       - env:
+          # Change this to a PAT if you want 'on: pull_request' CI to run against the new PR
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TITLE=$(gh issue view ${{ inputs.issue_number }} --json title -q .title)
@@ -103,7 +113,9 @@ jobs:
 
   comment-on-failure:
     needs: [implement, test]
-    if: always() && (needs.implement.result == 'failure' || needs.test.outputs.passed == 'false')
+    # always() ensures this runs even if previous jobs abort.
+    # Check for native failure rather than an output parameter
+    if: always() && (needs.implement.result == 'failure' || needs.test.result == 'failure')
     runs-on: ubuntu-latest
     permissions:
       issues: write

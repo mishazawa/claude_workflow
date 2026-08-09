@@ -3,6 +3,8 @@
 .claude/
 dist/
 
+.runtime/
+
 # Logs
 logs
 *.log
