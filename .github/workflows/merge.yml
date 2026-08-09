@@ -15,6 +15,7 @@ jobs:
       ready: ${{ steps.check.outputs.ready }}
       parent: ${{ steps.parent.outputs.number }}
     steps:
+      - uses: actions/checkout@v4
       - name: Extract parent issue number
         id: parent
         run: |
