@@ -86,6 +86,10 @@ jobs:
 
   dispatch-workers:
     needs: plan
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
     strategy:
       matrix:
         issue: ${{ fromJson(needs.plan.outputs.subtasks) }}
