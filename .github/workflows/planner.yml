@@ -1,0 +1,96 @@
+name: Plan subtasks
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  plan:
+    if: github.event.label.name == 'needs-plan'
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    outputs:
+      subtasks: ${{ steps.parse.outputs.subtasks }}
+      integration_branch: ${{ steps.branch.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "Claude"
+          git config --global user.email "claude@anthropic.com"
+
+      - name: Create integration branch
+        id: branch
+        run: |
+          NAME="integration/${{ github.event.issue.number }}"
+          git checkout -b "$NAME"
+          git push -u origin "$NAME"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Run planning prompt
+        id: plan
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          mkdir -p .github/claude-runs/${{ github.event.issue.number }}
+          RUN_DIR=.github/claude-runs/${{ github.event.issue.number }}
+
+          # substitute placeholders using env vars (avoids YAML/shell injection issues from issue content)
+          python3 -c "
+          import os
+          tpl = open('.github/prompts/plan.md').read()
+          tpl = tpl.replace('{{ISSUE_TITLE}}', os.environ['ISSUE_TITLE'])
+          tpl = tpl.replace('{{ISSUE_BODY}}', os.environ['ISSUE_BODY'])
+          open('$RUN_DIR/prompt.md', 'w').write(tpl)
+          "
+
+          claude -p "$(cat "$RUN_DIR/prompt.md")" \
+            --model ${{ vars.PLANNER_MODEL }} \
+            --effort ${{ vars.PLANNER_EFFORT }} \
+            --max-turns ${{ vars.PLANNER_TURNS }} \
+            --disallowedTools Bash,Write,Edit \
+            --permission-mode auto \
+            > "$RUN_DIR/plan_raw.json"
+
+          jq -c '.' "$RUN_DIR/plan_raw.json" > "$RUN_DIR/plan.json" || {
+            echo "Model output wasn't valid JSON:"; cat "$RUN_DIR/plan_raw.json"; exit 1;
+          }
+
+          echo "run_dir=$RUN_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Create subtask issues
+        id: parse
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PARENT: ${{ github.event.issue.number }}
+          RUN_DIR: ${{ steps.plan.outputs.run_dir }}
+        run: |
+          numbers="[]"
+          while read -r task; do
+            title=$(echo "$task" | jq -r '.title')
+            body=$(echo "$task" | jq -r '.body')
+            url=$(gh issue create \
+              --title "$title" \
+              --body "$body"$'\n\nPart of #'"$PARENT" \
+              --label "subtask")
+            num=$(basename "$url")
+            numbers=$(echo "$numbers" | jq --arg n "$num" '. + [$n | tonumber]')
+          done < <(jq -c '.subtasks[]' "$RUN_DIR/plan.json")
+
+          echo "subtasks=$numbers" >> "$GITHUB_OUTPUT"
+
+  dispatch-workers:
+    needs: plan
+    strategy:
+      matrix:
+        issue: ${{ fromJson(needs.plan.outputs.subtasks) }}
+    uses: ./.github/workflows/worker.yml
+    with:
+      issue_number: ${{ matrix.issue }}
+      integration_branch: ${{ needs.plan.outputs.integration_branch }}
+    secrets: inherit

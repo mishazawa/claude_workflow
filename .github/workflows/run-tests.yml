@@ -1,0 +1,36 @@
+name: Run tests
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        required: true
+        type: string
+    outputs:
+      passed:
+        value: ${{ jobs.test.outputs.passed }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.result.outputs.passed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Mark result
+        id: result
+        if: always()
+        run: echo "passed=${{ job.status == 'success' }}" >> "$GITHUB_OUTPUT"

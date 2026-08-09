@@ -1,0 +1,64 @@
+name: Open uber PR
+
+on:
+  push:
+    branches:
+      - "integration/**"
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      ready: ${{ steps.check.outputs.ready }}
+      parent: ${{ steps.parent.outputs.number }}
+    steps:
+      - name: Extract parent issue number
+        id: parent
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          NUM="${BRANCH##*/}"
+          echo "number=$NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Check all subtask PRs merged
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          OPEN=$(gh pr list --base "${{ github.ref_name }}" --state open --json number --jq 'length')
+          COUNT=$(gh pr list --base main --head "${{ github.ref_name }}" --json number --jq 'length')
+          if [ "$OPEN" -gt 0 ]; then
+            echo "still $OPEN subtask PR(s) open, skipping"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          elif [ "$COUNT" -gt 0 ]; then
+            echo "uber PR already exists, skipping"
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    needs: gate
+    if: needs.gate.outputs.ready == 'true'
+    uses: ./.github/workflows/run-tests.yml
+    with:
+      ref: ${{ github.ref_name }}
+
+  open-pr:
+    needs: [gate, test]
+    if: needs.gate.outputs.ready == 'true' && needs.test.outputs.passed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "${{ github.ref_name }}" \
+            --title "Closes #${{ needs.gate.outputs.parent }}" \
+            --body "Combined implementation for #${{ needs.gate.outputs.parent }}. All subtask PRs merged, tests passing on integration branch." \
+            --label "ready-for-review"

@@ -1,0 +1,108 @@
+name: Implement subtask
+
+on:
+  workflow_call:
+    inputs:
+      issue_number:
+        required: true
+        type: number
+      integration_branch:
+        required: true
+        type: string
+
+jobs:
+  implement:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+    outputs:
+      branch: ${{ steps.branch.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.integration_branch }}
+          fetch-depth: 0
+
+      - name: Fetch subtask issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue view ${{ inputs.issue_number }} --json title -q .title > title.txt
+          gh issue view ${{ inputs.issue_number }} --json body -q .body > body.txt
+
+      - name: Configure git identity
+        run: |
+          git config --global user.name "Claude"
+          git config --global user.email "claude@anthropic.com"
+
+      - name: Create branch off integration
+        id: branch
+        run: |
+          BRANCH="feat/subtask-${{ inputs.issue_number }}"
+          git checkout -b "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_ENV"
+          echo "name=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Build prompt
+        run: |
+          python3 -c "
+          title = open('title.txt').read().strip()
+          body = open('body.txt').read().strip()
+          tpl = open('.github/prompts/implement.md').read()
+          tpl = tpl.replace('{{ISSUE_TITLE}}', title).replace('{{ISSUE_BODY}}', body)
+          open('prompt.md', 'w').write(tpl)
+          "
+
+      - name: Run implementation
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          claude -p "$(cat prompt.md)" \
+            --model ${{ vars.WORKER_MODEL }} \
+            --effort ${{ vars.WORKER_EFFORT }} \
+            --max-turns ${{ vars.WORKER_TURNS }} \
+            --permission-mode auto
+      - name: Commit and push
+        run: |
+          git add -A
+          git diff --cached --quiet && { echo "No changes produced"; exit 1; }
+          git commit -m "Implement #${{ inputs.issue_number }}"
+          git push -u origin "$branch"
+  test:
+    needs: implement
+    uses: ./.github/workflows/run-tests.yml
+    with:
+      ref: ${{ needs.implement.outputs.branch }}
+  open-pr:
+    needs: [implement, test]
+    if: needs.test.outputs.passed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: read
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE=$(gh issue view ${{ inputs.issue_number }} --json title -q .title)
+          gh pr create \
+            --base ${{ inputs.integration_branch }} \
+            --head ${{ needs.implement.outputs.branch }} \
+            --title "$TITLE" \
+            --body "Implements #${{ inputs.issue_number }}" \
+            --label "subtask-pr"
+
+  comment-on-failure:
+    needs: [implement, test]
+    if: always() && (needs.implement.result == 'failure' || needs.test.outputs.passed == 'false')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment ${{ inputs.issue_number }} \
+            --body "⚠️ Subtask failed on run [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})."
